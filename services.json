@@ -1,0 +1,110 @@
+{
+	"strava": {
+		"client_id":          "STRAVA_CLIENT_ID",                                    
+		"client_secret":      "STRAVA_CLIENT_SECRET",
+		"authorize_endpoint": "https://www.strava.com/oauth/authorize",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "activity:read_all",
+		"prompt":             "&approval_prompt=force",
+		"token_endpoint":     "https://www.strava.com/oauth/token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+	},
+	"linkedin": {
+		"client_id":          "LINKEDIN_CLIENT_ID",  
+		"client_secret":      "LINKEDIN_CLIENT_SECRET", 
+		"authorize_endpoint": "https://www.linkedin.com/oauth/v2/authorization",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "r_liteprofile%20r_emailaddress",
+		"prompt":             "",
+		"token_endpoint":     "https://www.linkedin.com/oauth/v2/accessToken",
+		"post_type":          "basic",
+		"refresh_allowed":    "false",
+        "user_endpoint":      ""
+	},
+	"spotify": {
+		"client_id":          "SPOTIFY_CLIENT_ID", 
+		"client_secret":      "SPOTIFY_CLIENT_SECRET", 
+		"authorize_endpoint": "https://accounts.spotify.com/authorize",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "user-top-read%20user-read-email%20playlist-modify-public",
+		"prompt":             "",
+		"token_endpoint":     "https://accounts.spotify.com/api/token",
+		"post_type":          "form",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+    },
+	"github": {
+		"client_id":          "GITHUB_CLIENT_ID", 
+		"client_secret":      "GITHUB_CLIENT_SECRET", 
+		"authorize_endpoint": "https://github.com/login/oauth/authorize",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "repo",
+		"prompt":             "",
+		"token_endpoint":     "https://github.com/login/oauth/access_token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+	},
+	"fitbit": {
+		"client_id":          "FITBIT_CLIENT_ID", 
+		"client_secret":      "FITBIT_CLIENT_SECRET", 
+		"authorize_endpoint": "https://www.fitbit.com/oauth2/authorize",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "profile%20heartrate%20sleep",
+		"prompt":             "",
+		"token_endpoint":     "https://api.fitbit.com/oauth2/token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+	},
+	"oura": {
+		"client_id":          "OURA_CLIENT_ID", 
+		"client_secret":      "OURA_CLIENT_SECRET", 
+		"authorize_endpoint": "https://cloud.ouraring.com/oauth/authorize",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "personal%20daily",
+		"prompt":             "",
+		"token_endpoint":     "https://api.ouraring.com/oauth/token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+	},	
+	"google": {
+		"client_id":          "GOOGLE_CLIENT_ID", 
+		"client_secret":      "GOOGLE_CLIENT_SECRET", 
+		"authorize_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "openid%20email",
+		"prompt":             "",
+		"token_endpoint":     "https://oauth2.googleapis.com/token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      "https://www.googleapis.com/oauth2/v3/userinfo"
+	},
+	"amazon": {
+		"client_id":          "AMAZON_CLIENT_ID", 
+		"client_secret":      "AMAZON_CLIENT_SECRET", 
+		"authorize_endpoint": "https://www.amazon.com/ap/oa",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "profile",
+		"prompt":             "",
+		"token_endpoint":     "https://api.amazon.com/auth/o2/token",
+		"post_type":          "basic",
+		"refresh_allowed":    "true",
+        "user_endpoint":      "https://api.amazon.com/user/profile"
+	},
+    "withings": {
+		"client_id":          "WITHINGS_CLIENT_ID", 
+		"client_secret":      "WITHINGS_CLIENT_SECRET", 
+		"authorize_endpoint": "https://account.withings.com/oauth2_user/authorize2",
+		"redirect_uri":       "http://localhost:8000/redirect",
+		"scope":              "user.activity",
+		"prompt":             "",
+		"token_endpoint":     "https://wbsapi.withings.net/v2/oauth2",
+		"post_type":          "form",
+		"refresh_allowed":    "true",
+        "user_endpoint":      ""
+	}	
+}
