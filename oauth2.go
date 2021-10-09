@@ -178,7 +178,7 @@ func cookieName(service string) string {
 }
 
 //generic cookie setter
-func setCookie(w http.ResponseWriter, token string, cookieName string) {
+func SetCookie(w http.ResponseWriter, token string, cookieName string) {
 	tok64 := base64.StdEncoding.EncodeToString([]byte(token))
 	cookie := http.Cookie{
 		Name:     cookieName,
@@ -193,7 +193,7 @@ func setCookie(w http.ResponseWriter, token string, cookieName string) {
 }
 
 //generic cookie getter
-func getCookie(r *http.Request, cookieName string) (token string, err error) {
+func GetCookie(r *http.Request, cookieName string) (token string, err error) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		return
@@ -288,7 +288,7 @@ func epochSeconds() int64 {
 
 //get Access Token via cookie, refresh if expired, set header bearer token
 func setHeader(w http.ResponseWriter, r *http.Request, service string, newReq *http.Request) (err error) {
-	token, err := getCookie(r, cookieName(service))
+	token, err := GetCookie(r, cookieName(service))
 	if err != nil {
 		return
 	}
@@ -321,7 +321,7 @@ func setHeader(w http.ResponseWriter, r *http.Request, service string, newReq *h
 		if err != nil {
 			return
 		}
-		setCookie(w, newToken, cookieName(service)) //note: must set cookie before writing to responsewriter
+		SetCookie(w, newToken, cookieName(service)) //note: must set cookie before writing to responsewriter
 		decoder = json.NewDecoder(strings.NewReader(newToken))
 		decoder.UseNumber()
 		tokMap = make(map[string]interface{})
@@ -349,7 +349,7 @@ func ExchangeCode(w http.ResponseWriter, r *http.Request, code string, state str
 	if err != nil {
 		return
 	}
-	setCookie(w, token, cookieName(statePtr.Service)) //note: must set cookie before writing to responsewriter
+	SetCookie(w, token, cookieName(statePtr.Service)) //note: must set cookie before writing to responsewriter
 	return
 }
 
