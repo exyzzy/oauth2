@@ -1,3 +1,4 @@
+// Package oauth2 is a small and simple oauth 2 library in go. Also see https://github.com/exyzzy/oclient2, and the Medium article, "OAuth 2.0 in Go"
 package oauth2
 
 import (
@@ -19,25 +20,30 @@ import (
 	"time"
 )
 
+//Services currently tested, the consts are not necessary
 const (
-	STRAVA    = "strava"
-	LINKEDIN  = "linkedin"
-	SPOTIFY   = "spotify"
-	GITHUB    = "github"
-	FITBIT    = "fitbit"
-	OURA      = "oura"
-	GOOGLE    = "google"
-	AMAZON    = "amazon"
-	WITHINGS  = "withings"
+	STRAVA   = "strava"
+	LINKEDIN = "linkedin"
+	SPOTIFY  = "spotify"
+	GITHUB   = "github"
+	FITBIT   = "fitbit"
+	OURA     = "oura"
+	GOOGLE   = "google"
+	AMAZON   = "amazon"
+	WITHINGS = "withings"
+)
+
+// Service keys
+const (
 	AUTHORIZE = "authorization_code"
 	REFRESH   = "refresh_token"
 	SECRET    = "secret"
 	PKCE      = "pkce"
 )
 
-//init PKCE and services.json
+// InitOauth2 initializes PKCE and loads services.json, it should be called before using the package. Services.json should be copied to your project and edited there.
 func InitOauth2(servicesFile string) error {
-	PkceInit()
+	pkceInit()
 	return loadConfig(servicesFile, &services)
 }
 
@@ -60,15 +66,17 @@ func loadConfig(fname string, config *map[string]map[string]string) (err error) 
 		v["client_id"] = os.Getenv(v["client_id"])
 		if v["client_id"] == "" {
 			v["client_id"] = "MISSING"
-			fmt.Println("Missing service client_id for " + k)
-			// err = errors.New("Missing service client_id for " + k)
+			fmt.Println("missing service client_id for " + k)
+			//don't block on missing client entry
+			// err = errors.New("missing service client_id for " + k)
 			// return
 		}
 		v["client_secret"] = os.Getenv(v["client_secret"])
 		if v["client_secret"] == "" {
 			v["client_secret"] = "MISSING"
-			fmt.Println("Missing service client_secret for " + k)
-			// err = errors.New("Missing service client_id for " + k)
+			fmt.Println("missing service client_secret for " + k)
+			//don't block on missing client entry
+			// err = errors.New("missing service client_id for " + k)
 			// return
 		}
 	}
@@ -77,12 +85,12 @@ func loadConfig(fname string, config *map[string]map[string]string) (err error) 
 
 //== PKCE
 
-func PkceInit() {
+func pkceInit() {
 	rand.Seed(time.Now().UnixNano())
 }
 
 //string of pkce allowed chars
-func PkceVerifier(length int) string {
+func pkceVerifier(length int) string {
 	if length > 128 {
 		length = 128
 	}
@@ -99,7 +107,7 @@ func PkceVerifier(length int) string {
 }
 
 //base64-URL-encoded SHA256 hash of verifier, per rfc 7636
-func PkceChallenge(verifier string) string {
+func pkceChallenge(verifier string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	challenge := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(sum[:])
 	return (challenge)
@@ -107,13 +115,14 @@ func PkceChallenge(verifier string) string {
 
 //== State Management
 
+// Tunable params for state management.
 const (
 	GcPeriod        = 60  //minutes - minimum ideal time between GC runs (unless MaxState)
 	InitAuthTimeout = 10  //minutes - amount of time user has to complete Authorization and get Access Code from Authorization Server
 	MaxState        = 400 //max allowed length of state map, to prevent malicious memory overflow
 )
 
-type State struct {
+type state struct {
 	CreatedAt     time.Time
 	Service       string
 	AuthType      string
@@ -121,14 +130,14 @@ type State struct {
 	PkceChallenge string
 }
 
-var state = make(map[string]*State)
+var stateMap = make(map[string]*state)
 var lastGc = time.Now().UTC()
 var mutex = &sync.Mutex{}
 
 //get the payload for a state, check expiration, and delete
-func getState(key string) (value *State) {
+func getState(key string) (value *state) {
 	mutex.Lock()
-	v, exists := state[key]
+	v, exists := stateMap[key]
 	if exists {
 		n := time.Now().UTC()
 		if n.After(v.CreatedAt.Add(InitAuthTimeout * time.Minute)) {
@@ -136,7 +145,7 @@ func getState(key string) (value *State) {
 		} else {
 			value = v
 		}
-		delete(state, key)
+		delete(stateMap, key)
 	} else {
 		value = nil
 	}
@@ -145,20 +154,20 @@ func getState(key string) (value *State) {
 }
 
 //set the payload for a state, set expiration, do gc as needed
-func setState(key string, value *State) {
+func setState(key string, value *state) {
 	mutex.Lock()
 	n := time.Now().UTC()
 	value.CreatedAt = n
-	state[key] = value
+	stateMap[key] = value
 	//gc
 	authTimeout := InitAuthTimeout * time.Minute //type Duration
 	gcTime := lastGc.Add(GcPeriod * time.Minute)
-	if n.After(gcTime) || len(state) >= MaxState {
-		for ok := true; ok; ok = len(state) >= MaxState { //keep going till below MaxState, 1/2 each cycle
-			for k, v := range state {
+	if n.After(gcTime) || len(stateMap) >= MaxState {
+		for ok := true; ok; ok = len(stateMap) >= MaxState { //keep going till below MaxState, 1/2 each cycle
+			for k, v := range stateMap {
 				expiresAt := v.CreatedAt.Add(authTimeout)
 				if n.After(expiresAt) {
-					delete(state, k)
+					delete(stateMap, k)
 				}
 			}
 			authTimeout /= 2
@@ -166,18 +175,18 @@ func setState(key string, value *State) {
 		lastGc = time.Now().UTC()
 	}
 	defer mutex.Unlock()
-	return
 }
 
 //== Cookie Helpers
 
+// Prefix for cookie name, the service name from services.json will be appended.
 const CookiePrefix = "_Oauth2"
 
 func cookieName(service string) string {
 	return (CookiePrefix + service)
 }
 
-//generic cookie setter
+// SetCookie is a generic cookie setter.
 func SetCookie(w http.ResponseWriter, token string, cookieName string) {
 	tok64 := base64.StdEncoding.EncodeToString([]byte(token))
 	cookie := http.Cookie{
@@ -189,10 +198,9 @@ func SetCookie(w http.ResponseWriter, token string, cookieName string) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookie)
-	return
 }
 
-//generic cookie getter
+// GetCookie is a generic cookie getter.
 func GetCookie(r *http.Request, cookieName string) (token string, err error) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
@@ -208,10 +216,10 @@ func GetCookie(r *http.Request, cookieName string) (token string, err error) {
 
 //== API Helpers
 
-//build service Code Authorize Link and save state as pkceVerifier (128)
+// AuthLink builds the service Code Authorize Link and saves the state as pkceVerifier (128).
 func AuthLink(r *http.Request, authtype string, service string) (result string) {
-	stData := State{Service: service, AuthType: authtype}
-	st := PkceVerifier(128)
+	stData := state{Service: service, AuthType: authtype}
+	st := pkceVerifier(128)
 	result = services[service]["authorize_endpoint"]
 	result += "?client_id=" + services[service]["client_id"]
 	result += "&response_type=code&redirect_uri="
@@ -219,8 +227,8 @@ func AuthLink(r *http.Request, authtype string, service string) (result string) 
 	result += "&scope=" + services[service]["scope"]
 	result += services[service]["prompt"]
 	if authtype == PKCE {
-		stData.PkceVerifier = PkceVerifier(128)
-		stData.PkceChallenge = PkceChallenge(stData.PkceVerifier)
+		stData.PkceVerifier = pkceVerifier(128)
+		stData.PkceChallenge = pkceChallenge(stData.PkceVerifier)
 		result += "&code_challenge=" + stData.PkceChallenge
 		result += "&code_challenge_method=S256"
 	}
@@ -231,10 +239,11 @@ func AuthLink(r *http.Request, authtype string, service string) (result string) 
 	return
 }
 
+// GetUser calls the user_endpoint api if one is included in services.json to get user profile data. The scope must allow this.
 func GetUser(w http.ResponseWriter, r *http.Request, service string) (result map[string]interface{}, err error) {
 	userEndpoint, ok := services[service]["user_endpoint"]
 	if !ok || userEndpoint == "" {
-		err = errors.New("No user endpoint")
+		err = errors.New("no user endpoint")
 		return
 	}
 	resp, err := ApiRequest(w, r, service, "GET", userEndpoint, nil)
@@ -251,7 +260,7 @@ func GetUser(w http.ResponseWriter, r *http.Request, service string) (result map
 	return
 }
 
-//make call to a resource api, add oauth bearer token
+//ApiRequest makes a call to a resource api, adding oauth bearer token to the header. It automatically refreshes the token if it is expired. Seervice is the name of the service as defined in services.json, like 'google". Method is the http method, like "POST" or "GET". Url is the url for the api.
 func ApiRequest(w http.ResponseWriter, r *http.Request, service, method, url string, data map[string]interface{}) (response *http.Response, err error) {
 	var client = &http.Client{
 		Timeout: time.Second * 10,
@@ -273,7 +282,7 @@ func ApiRequest(w http.ResponseWriter, r *http.Request, service, method, url str
 	}
 	err = setHeader(w, r, service, request)
 	if err != nil {
-		err = errors.New("Unable to set Header (" + service + "): " + err.Error())
+		err = errors.New("unable to set Header (" + service + "): " + err.Error())
 		return
 	}
 	response, err = client.Do(request)
@@ -308,12 +317,12 @@ func setHeader(w http.ResponseWriter, r *http.Request, service string, newReq *h
 	}
 	if epochSeconds() > expiresAt { //token has expired, refresh it
 		if services[service]["refresh_allowed"] == "false" {
-			err = errors.New("Non-refreshable Token Expired, Re-authorize")
+			err = errors.New("non-refreshable token expired, re-authorize")
 			return
 		}
 		refresh, exists := tokMap["refresh_token"]
 		if !exists {
-			err = errors.New("Refresh Token Not Found")
+			err = errors.New("refresh Token Not Found")
 			return
 		}
 		var newToken string
@@ -338,11 +347,11 @@ func setHeader(w http.ResponseWriter, r *http.Request, service string, newReq *h
 
 //== Access Token
 
-//exchange the Authorization Code for Access Token
+//ExchangeCode is used by the redirect handler to exchange the Authorization Code for an Access Token.
 func ExchangeCode(w http.ResponseWriter, r *http.Request, code string, state string) (err error) {
 	statePtr := getState(state)
 	if statePtr == nil {
-		err = errors.New("State Key not found")
+		err = errors.New("state Key not found")
 		return
 	}
 	token, err := getToken(w, r, statePtr.Service, AUTHORIZE, code, statePtr.AuthType, statePtr.PkceVerifier)
@@ -387,7 +396,7 @@ func basicPost(url string, body io.Reader, ba string) (resp *http.Response, err 
 	return client.Do(req)
 }
 
-//subtract a small delta from exires_at to account for transport time
+// Small delta subtracted from exires_at conversion to account for transport time.
 const DELTASECS = 5
 
 //get a token from authorization endpoint
@@ -406,7 +415,7 @@ func getToken(w http.ResponseWriter, r *http.Request, service string, tokType st
 		rParams["refresh_token"] = code
 		rParams["grant_type"] = REFRESH
 	default:
-		err = errors.New("Unknown tokType")
+		err = errors.New("unknown tokType")
 		return
 	}
 	switch authType {
@@ -415,7 +424,7 @@ func getToken(w http.ResponseWriter, r *http.Request, service string, tokType st
 	case PKCE:
 		rParams["code_verifier"] = verifier
 	default:
-		err = errors.New("Unknown authType")
+		err = errors.New("unknown authType")
 		return
 	}
 	var resp *http.Response
@@ -453,7 +462,7 @@ func getToken(w http.ResponseWriter, r *http.Request, service string, tokType st
 			return
 		}
 	default:
-		err = errors.New("Unknown post_type")
+		err = errors.New("unknown post_type")
 		return
 	}
 	defer resp.Body.Close()
